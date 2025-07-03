@@ -3,6 +3,7 @@ let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
 const public_users = express.Router();
+const axios = require('axios');
 
 
 public_users.post("/register", (req,res) => {
@@ -31,35 +32,45 @@ public_users.get('/',function (req, res) {
     return res.status(200).json(books);
 });
 
+const fetchBooks = async () => {
+    try {
+        const response = await axios.get('https://liaramosdev-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/');
+        console.log("Books in the shop:");
+        console.log(response.data);
+    } catch (error) {
+        console.error("Failure to fetch books:", error.message);
+    }
+};
+
+fetchBooks();
+
 // Get book details based on ISBN
-public_users.get('/isbn/:isbn',function (req, res) {
-    const isbn = req.params.isbn;
-    const book = books[isbn];
+const isbn = '3';
+const apiUrl = `https://liaramosdev-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/isbn/${isbn}`;
 
-    if (book) {
-        return res.status(200).json(book);
-    } else {
-        return res.status(404).json({message: "Book not found."});
-    }
- });
+axios.get(apiUrl)
+    .then((response) => {
+        console.log(`Book details for ISBN ${isbn}:`);
+        console.log(response.data);
+    })
+    .catch((error) => {
+        console.error(`Error fetching book with the ISBN ${isbn}`);
+    });
+
   
-// Get book details based on author
-public_users.get('/author/:author',function (req, res) {
-    const author = req.params.author;
-    const results = [];
+// Get book details based on Author via promises
+const author = 'Unknown';
+const authorUrl = `https://liaramosdev-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/author/${author}`;
 
-    for (let key in books) {
-        if (books[key].author === author) {
-            results.push(books[key]);
-        }
-    }
+axios.get(authorUrl)
+    .then((response) => {
+        console.log(`Book(s) written by ${author}:`);
+        console.log(response.data);
+    })
+    .catch((error) => {
+        console.error(`Error fetching book(s) written by ${author}`);
+    });
 
-    if (results.length > 0) {
-        return res.status(200).json(results);
-    } else {
-        return res.status(404).json({message: "Author not found."});
-    }
-});
 
 // Get all books based on title
 public_users.get('/title/:title',function (req, res) {
@@ -78,6 +89,23 @@ public_users.get('/title/:title',function (req, res) {
         return res.status(404).json({message: "Title not found."});
     }
 });
+
+    const fetchBookByTitle = async (title) => {
+        try {
+            // Encoding because of spaces in titles and all that.
+            const encodedTitle = encodeURIComponent(title);
+            const url = `https://liaramosdev-5000.theianext-0-labs-prod-misc-tools-us-east-0.proxy.cognitiveclass.ai/title/${encodedTitle}`;
+
+            const response = await axios.get(url);
+            console.log(`Book titled "${title}":`);
+            console.log(response.data);
+        } catch (error) {
+            console.error(`Failed to fetch the book "${title}": `, error.message);
+        }
+    };
+
+    // Getting book by title
+    fetchBookByTitle('The Book Of Job');
 
 //  Get book review
 public_users.get('/review/:isbn',function (req, res) {
